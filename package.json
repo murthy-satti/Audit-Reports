@@ -9,6 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@lexical/link": "^0.39.0",
+    "@lexical/list": "^0.39.0",
+    "@lexical/react": "^0.39.0",
+    "@lexical/rich-text": "^0.39.0",
+    "@lexical/table": "^0.39.0",
+    "lexical": "^0.39.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "pdf-lib": "^1.17.1",
