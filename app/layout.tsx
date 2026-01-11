@@ -6,6 +6,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Audit Report Generator",
   description: "Simplified audit report generation and download",
+    icons: {
+    icon: "/logo.png",       // or /favicon.ico
+    shortcut: "/logo.png",
+    apple: "/apple-logo.png" // optional
+  }
 };
 
 export default function RootLayout({

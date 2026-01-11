@@ -1,27 +1,26 @@
 "use client";
 
-import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Download, FileText, Edit2, X } from "lucide-react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { TableNode, TableRowNode, TableCellNode } from "@lexical/table";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { LinkNode } from "@lexical/link";
-import {
-  $generateHtmlFromNodes,
-  $generateNodesFromDOM,
-} from "@lexical/html";
 import { LexicalEditor as LexicalEditorType } from "lexical";
 import {
-  $getRoot,
-  $createParagraphNode,
-  $createTextNode,
-  RangeSelection,
-} from "lexical";
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+  PageBreak,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+} from "docx";
+import { saveAs } from "file-saver";
+import {
+  DocumentEditor,
+  TableRenderer,
+  type Block,
+} from "@/components/lexicalEditor";
 
 /* ================= TYPES ================= */
 interface DownloadPopupProps {
@@ -30,24 +29,10 @@ interface DownloadPopupProps {
   onDownload: (format: "pdf" | "docx") => void;
 }
 
-interface ToolbarPluginProps {
-  editor: LexicalEditorType | null;
-}
-
-interface Block {
-  type: "paragraph" | "heading";
-  text: string;
-  align: "left" | "center" | "right" | "justify";
-  bold?: boolean;
-  italic?: boolean;
-  color?: string;
-}
-
 interface PagePreviewProps {
   blocks: Block[];
   pageNo: number;
   isEditing: boolean;
-  editor: LexicalEditorType | null;
   onEditorReady: (editor: LexicalEditorType) => void;
 }
 
@@ -57,190 +42,12 @@ interface InputProps {
   onChange: (value: string) => void;
 }
 
-/* ================= LEXICAL CONFIG ================= */
-const createLexicalConfig = () => ({
-  namespace: "GramaPanchayatiEditor",
-  nodes: [
-    HeadingNode,
-    ListNode,
-    ListItemNode,
-    QuoteNode,
-    TableNode,
-    TableRowNode,
-    TableCellNode,
-    LinkNode,
-  ],
-  onError: (error: Error) => console.error("Lexical error:", error),
-});
-
-/* ================= TOOLBAR PLUGIN (MS WORD STYLE) ================= */
-function ToolbarPlugin({ editor }: ToolbarPluginProps) {
-  const applyFormat = (formatType: "bold" | "italic" | "underline") => {
-    if (!editor) return;
-
-    editor.update(() => {
-      const selection = editor.getSelection() as RangeSelection | null;
-      if (selection && selection.formatText) {
-        selection.formatText(formatType);
-      }
-    });
-  };
-
-  return (
-    <div className="w-full bg-white border-b border-slate-300 p-3 flex flex-wrap gap-2 items-center sticky top-0 z-40">
-      {/* Font Section */}
-      <select className="px-3 py-2 border border-slate-300 rounded text-sm bg-white hover:bg-slate-50 cursor-pointer">
-        <option>Arial</option>
-        <option>Times New Roman</option>
-        <option>Courier New</option>
-        <option>Georgia</option>
-      </select>
-
-      {/* Font Size */}
-      <div className="flex items-center gap-1 border border-slate-300 rounded">
-        <button className="px-2 py-1 hover:bg-slate-100 text-sm transition">
-          −
-        </button>
-        <input
-          type="number"
-          defaultValue="11"
-          className="w-12 text-center border-l border-r border-slate-200 py-1 text-sm"
-        />
-        <button className="px-2 py-1 hover:bg-slate-100 text-sm transition">
-          +
-        </button>
-      </div>
-
-      {/* Divider */}
-      <div className="h-6 border-l border-slate-300" />
-
-      {/* Formatting Buttons */}
-      <button
-        onMouseDown={(e) => {
-          e.preventDefault();
-          applyFormat("bold");
-        }}
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 font-bold transition"
-        title="బోల్డ్ (Ctrl+B)"
-      >
-        B
-      </button>
-
-      <button
-        onMouseDown={(e) => {
-          e.preventDefault();
-          applyFormat("italic");
-        }}
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 italic transition"
-        title="ఇటాలిక్ (Ctrl+I)"
-      >
-        I
-      </button>
-
-      <button
-        onMouseDown={(e) => {
-          e.preventDefault();
-          applyFormat("underline");
-        }}
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 underline transition"
-        title="అండర్‌లైన్ (Ctrl+U)"
-      >
-        U
-      </button>
-
-      {/* Text Color */}
-      <input
-        type="color"
-        defaultValue="#000000"
-        className="w-10 h-9 border border-slate-300 rounded cursor-pointer"
-        title="పాఠ్య రంగు"
-      />
-
-      {/* Divider */}
-      <div className="h-6 border-l border-slate-300" />
-
-      {/* Alignment Buttons */}
-      <button
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 text-sm transition"
-        title="ఎడమ సమలేఖనం"
-      >
-        ⬅
-      </button>
-
-      <button
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 text-sm transition"
-        title="కేంద్ర సమలేఖనం"
-      >
-        ⬇
-      </button>
-
-      <button
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 text-sm transition"
-        title="కుడి సమలేఖనం"
-      >
-        ➡
-      </button>
-
-      {/* Divider */}
-      <div className="h-6 border-l border-slate-300" />
-
-      {/* List Buttons */}
-      <button
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 text-sm transition"
-        title="బుల్లెట్ జాబితా"
-      >
-        ▸
-      </button>
-
-      <button
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 text-sm transition"
-        title="సంఖ్య జాబితా"
-      >
-        1️⃣
-      </button>
-
-      {/* Divider */}
-      <div className="h-6 border-l border-slate-300" />
-
-      {/* More Options */}
-      <button
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 transition"
-        title="లింక్ చేయండి"
-      >
-        🔗
-      </button>
-
-      <button
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 transition"
-        title="చిత్రం చేర్చండి"
-      >
-        🖼️
-      </button>
-
-      {/* Divider */}
-      <div className="h-6 border-l border-slate-300" />
-
-      {/* Clear Formatting */}
-      <button
-        className="px-3 py-2 border border-slate-300 rounded hover:bg-slate-100 text-sm transition"
-        title="ఫార్మాటింగ్ క్లియర్ చేయండి"
-      >
-        🗑️
-      </button>
-
-      {/* Help Text */}
-      <div className="ml-auto text-xs text-slate-500 whitespace-nowrap">
-        సవరించండి: టెక్స్ట్ ఎంచుకోండి → బటన్‌ను క్లిక్ చేయండి
-      </div>
-    </div>
-  );
-}
-
 /* ================= DOWNLOAD POPUP ================= */
 function DownloadPopup({
   isOpen,
   onClose,
   onDownload,
+
 }: DownloadPopupProps) {
   if (!isOpen) return null;
 
@@ -308,180 +115,21 @@ function DownloadPopup({
   );
 }
 
-/* ================= HTML TO BLOCKS CONVERTER ================= */
-function htmlToBlocks(html: string): Block[] {
-  if (!html || !html.trim()) return [];
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  const blocks: Block[] = [];
-
-  const processNode = (node: Node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent?.trim() || "";
-      if (text) {
-        blocks.push({
-          type: "paragraph",
-          text,
-          align: "left",
-          bold: false,
-          italic: false,
-          color: "#000000",
-        });
-      }
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const element = node as HTMLElement;
-      const tag = element.tagName.toLowerCase();
-      const text = element.textContent?.trim() || "";
-
-      if (!text) return;
-
-      const style = window.getComputedStyle(element);
-      const bold =
-        parseInt(style.fontWeight) > 500 ||
-        tag === "strong" ||
-        tag === "b" ||
-        element.classList.contains("bold");
-      const italic =
-        style.fontStyle === "italic" ||
-        tag === "em" ||
-        tag === "i" ||
-        element.classList.contains("italic");
-
-      const alignMap: Record<string, "center" | "right" | "justify" | "left"> =
-        {
-          center: "center",
-          right: "right",
-          justify: "justify",
-        };
-      const align: "center" | "right" | "justify" | "left" =
-        alignMap[style.textAlign] || "left";
-
-      if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)) {
-        blocks.push({
-          type: "heading",
-          text,
-          align,
-          bold: true,
-          italic,
-          color: style.color || "#000000",
-        });
-      } else if (["p", "div", "section"].includes(tag)) {
-        blocks.push({
-          type: "paragraph",
-          text,
-          align,
-          bold,
-          italic,
-          color: style.color || "#000000",
-        });
-      } else if (tag === "ul" || tag === "ol") {
-        Array.from(element.children).forEach((li) => {
-          blocks.push({
-            type: "paragraph",
-            text: `• ${(li as HTMLElement).textContent?.trim() || ""}`,
-            align: "left",
-            bold: false,
-            italic: false,
-            color: "#000000",
-          });
-        });
-      }
-    }
-  };
-
-  Array.from(doc.body.childNodes).forEach(processNode);
-  return blocks;
-}
-
-/* ================= POPULATE EDITOR PLUGIN ================= */
-function PopulateEditorPlugin({
-  blocks,
-  onEditorReady,
-}: {
-  blocks: Block[];
-  onEditorReady: (editor: LexicalEditorType) => void;
-}) {
-  useEffect(() => {
-    // Get the editor instance from the LexicalComposer
-    const handleEditorReady = (editor: LexicalEditorType) => {
-      editor.update(() => {
-        const root = $getRoot();
-        root.clear();
-
-        // Add blocks to the editor
-        blocks.forEach((block) => {
-          const paragraph = $createParagraphNode();
-          const text = $createTextNode(block.text);
-          paragraph.append(text);
-
-          if (block.type === "heading") {
-            // For headings, we create h2 elements
-            // Note: Lexical's basic nodes don't support semantic HTML, 
-            // so we'll use paragraphs with formatting instead
-            text.toggleFormat("bold");
-          }
-
-          if (block.bold) {
-            text.toggleFormat("bold");
-          }
-          if (block.italic) {
-            text.toggleFormat("italic");
-          }
-
-          root.append(paragraph);
-        });
-      });
-
-      onEditorReady(editor);
-    };
-  }, [blocks, onEditorReady]);
-
-  return null;
-}
-
 /* ================= A4 PAGE PREVIEW WITH INTEGRATED EDITOR ================= */
 function PagePreview({
   blocks,
   pageNo,
   isEditing,
-  editor,
   onEditorReady,
 }: PagePreviewProps) {
   if (isEditing) {
     return (
       <div className="mx-auto w-[210mm] h-[297mm] bg-white rounded-lg shadow-lg flex flex-col border-2 border-blue-500 shrink-0 overflow-hidden">
-        <LexicalComposer initialConfig={createLexicalConfig()}>
-          <ToolbarPlugin editor={editor} />
-          <div className="flex-1 overflow-auto px-5 py-7">
-            <RichTextPlugin
-              contentEditable={
-                <ContentEditable
-                  className="w-full min-h-full outline-none text-slate-900"
-                  style={{
-                    lineHeight: "1.8",
-                    fontSize: "14px",
-                    fontFamily: "Arial, sans-serif",
-                  }}
-                />
-              }
-              placeholder={
-                <div className="text-slate-400 text-center py-10">
-                  <p className="text-sm">
-                    ఇక్కడ సవరించండి... (పేజీ {pageNo})
-                  </p>
-                </div>
-              }
-              ErrorBoundary={() => null}
-            />
-            <HistoryPlugin />
-            <AutoFocusPlugin />
-          </div>
-          <PopulateEditorPlugin
-            blocks={blocks}
-            onEditorReady={onEditorReady}
-          />
-        </LexicalComposer>
+        <DocumentEditor
+          blocks={blocks}
+          onEditorReady={onEditorReady}
+          pageNo={pageNo}
+        />
         <div className="text-center text-xs py-3 text-slate-400 border-t border-slate-200">
           పేజీ {pageNo}
         </div>
@@ -494,6 +142,11 @@ function PagePreview({
       <div className="flex-1 overflow-y-auto px-5 py-7 text-slate-900">
         {blocks && blocks.length > 0 ? (
           blocks.map((block, index) => {
+            // Handle table blocks
+            if (block.type === "table" && block.rows) {
+              return <TableRenderer key={index} rows={block.rows} />;
+            }
+
             const alignClass =
               block.align === "center"
                 ? "text-center"
@@ -601,7 +254,6 @@ export default function HomePage() {
         type: "paragraph",
         text: "(మండల ఆడిట్ రిపోర్టర్‌కు సమర్పించుటకు)",
         align: "center",
-        italic: true,
       },
       {
         type: "paragraph",
@@ -667,6 +319,53 @@ export default function HomePage() {
     [sarpanch, secretary, income, expense, finalDate]
   );
 
+  const generatePage3Blocks = useCallback(
+    (): Block[] => [
+      {
+        type: "heading",
+        text: "ఆదాయ-వ్యయాల వివరాలు",
+        align: "center",
+        bold: true,
+      },
+      {
+        type: "paragraph",
+        text: `ఆర్థిక సంవత్సరం: ${financialYear}`,
+        align: "center",
+      },
+      {
+        type: "table",
+        rows: [
+          { cells: ["క్ర.సం.", "వివరణ", "ఆదాయం (రూ.)", "వ్యయం (రూ.)"] },
+          { cells: ["1", "ప్రభుత్వ గ్రాంట్లు", "15,00,000", "-"] },
+          { cells: ["2", "పన్నుల ద్వారా ఆదాయం", "8,50,000", "-"] },
+          { cells: ["3", "ఇతర ఆదాయం", "5,25,000", "-"] },
+          { cells: ["4", "వేతనాలు & భత్యాలు", "-", "12,00,000"] },
+          { cells: ["5", "అభివృద్ధి పనులు", "-", "10,50,000"] },
+          { cells: ["6", "నిర్వహణ ఖర్చులు", "-", "5,40,000"] },
+          { cells: ["", "మొత్తం", income, expense] },
+        ],
+      },
+      {
+        type: "paragraph",
+        text: "పై వివరాలు గ్రామ పంచాయతీ రికార్డుల ఆధారంగా సమర్పించబడినవి.",
+        align: "justify",
+      },
+      {
+        type: "paragraph",
+        text: `సర్పంచ్: ${sarpanch}`,
+        align: "left",
+        bold: true,
+      },
+      {
+        type: "paragraph",
+        text: `కార్యదర్శి: ${secretary}`,
+        align: "left",
+        bold: true,
+      },
+    ],
+    [financialYear, income, expense, sarpanch, secretary]
+  );
+
   const page1Blocks = useMemo(
     () => generatePage1Blocks(),
     [generatePage1Blocks]
@@ -675,57 +374,119 @@ export default function HomePage() {
     () => generatePage2Blocks(),
     [generatePage2Blocks]
   );
+  const page3Blocks = useMemo(
+    () => generatePage3Blocks(),
+    [generatePage3Blocks]
+  );
 
   /* ================= PDF DOWNLOAD ================= */
   const downloadPdf = async () => {
     try {
-      const { PDFDocument, rgb } = await import("pdf-lib");
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
 
-      const pdfDoc = await PDFDocument.create();
+      // Create a temporary container for rendering
+      const container = document.createElement("div");
+      container.style.position = "absolute";
+      container.style.left = "-9999px";
+      container.style.top = "0";
+      container.style.background = "white";
+      document.body.appendChild(container);
 
-      const fontBytes = await fetch("/fonts/NotoSansTelugu-Regular.ttf").then(
-        (r) => r.arrayBuffer()
-      );
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 15;
+      const contentWidth = pageWidth - margin * 2;
 
-      const font = await pdfDoc.embedFont(fontBytes);
-
-      const pages = [
-        { blocks: page1Blocks, title: "Page 1" },
-        { blocks: page2Blocks, title: "Page 2" },
+      const allPages = [
+        { blocks: page1Blocks, title: "పేజీ 1" },
+        { blocks: page2Blocks, title: "పేజీ 2" },
+        { blocks: page3Blocks, title: "పేజీ 3" },
       ];
 
-      pages.forEach(({ blocks }) => {
-        const page = pdfDoc.addPage([595, 842]);
-        let y = 780;
+      for (let i = 0; i < allPages.length; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        const { blocks } = allPages[i];
+
+        // Create page content
+        const pageDiv = document.createElement("div");
+        pageDiv.style.width = "595px";
+        pageDiv.style.padding = "40px";
+        pageDiv.style.fontFamily = "Arial, sans-serif";
+        pageDiv.style.background = "white";
+        pageDiv.style.color = "black";
 
         blocks.forEach((block) => {
-          const xPos = block.align === "center" ? 150 : 50;
+          if (block.type === "table" && block.rows) {
+            // Create HTML table
+            const table = document.createElement("table");
+            table.style.width = "100%";
+            table.style.borderCollapse = "collapse";
+            table.style.marginBottom = "16px";
 
-          page.drawText(block.text, {
-            x: xPos,
-            y,
-            size: 11,
-            font,
-            maxWidth: 495,
-            lineHeight: 14,
-            color: rgb(0, 0, 0),
-          });
+            block.rows.forEach((row) => {
+              const tr = document.createElement("tr");
+              row.cells.forEach((cell) => {
+                const td = document.createElement("td");
+                td.textContent = cell;
+                td.style.border = "1px solid #ccc";
+                td.style.padding = "8px";
+                td.style.fontSize = "12px";
+                tr.appendChild(td);
+              });
+              table.appendChild(tr);
+            });
 
-          y -= 40;
+            pageDiv.appendChild(table);
+          } else {
+            const el = document.createElement(block.type === "heading" ? "h2" : "p");
+            el.textContent = block.text || "";
+            el.style.margin = "0 0 16px 0";
+            el.style.fontSize = block.type === "heading" ? "16px" : "14px";
+            el.style.fontWeight = block.bold || block.type === "heading" ? "bold" : "normal";
+            el.style.fontStyle = block.italic ? "italic" : "normal";
+            el.style.textAlign = block.align || "left";
+            el.style.lineHeight = "1.8";
+            el.style.whiteSpace = "pre-wrap";
+            pageDiv.appendChild(el);
+          }
         });
-      });
 
-      const bytes = await pdfDoc.save();
-      const blob = new Blob([new Uint8Array(bytes)], {
-        type: "application/pdf",
-      });
+        // Add page number
+        const pageNum = document.createElement("div");
+        pageNum.textContent = `పేజీ ${i + 1}`;
+        pageNum.style.textAlign = "center";
+        pageNum.style.marginTop = "40px";
+        pageNum.style.fontSize = "12px";
+        pageNum.style.color = "#666";
+        pageDiv.appendChild(pageNum);
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "grama_panchayati_audit_report.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
+        container.innerHTML = "";
+        container.appendChild(pageDiv);
+
+        // Render to canvas
+        const canvas = await html2canvas(pageDiv, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        pdf.addImage(imgData, "JPEG", margin, margin, imgWidth, Math.min(imgHeight, pageHeight - margin * 2));
+      }
+
+      // Cleanup
+      document.body.removeChild(container);
+
+      pdf.save("grama_panchayati_audit_report.pdf");
       setDownloadPopupOpen(false);
     } catch (error) {
       console.error("PDF generation error:", error);
@@ -736,7 +497,97 @@ export default function HomePage() {
   /* ================= DOCX DOWNLOAD ================= */
   const downloadDocx = async () => {
     try {
-      alert("DOCX ఫార్మాట్ త్వరలో అందుబాటులో ఉంటుంది");
+      const getAlignment = (align?: string) => {
+        switch (align) {
+          case "center":
+            return AlignmentType.CENTER;
+          case "right":
+            return AlignmentType.RIGHT;
+          case "justify":
+            return AlignmentType.JUSTIFIED;
+          default:
+            return AlignmentType.LEFT;
+        }
+      };
+
+      const createDocxTable = (rows: { cells: string[] }[]) => {
+        return new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: rows.map(
+            (row) =>
+              new TableRow({
+                children: row.cells.map(
+                  (cell) =>
+                    new TableCell({
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: cell,
+                              size: 22,
+                              font: "Arial",
+                            }),
+                          ],
+                        }),
+                      ],
+                    })
+                ),
+              })
+          ),
+        });
+      };
+
+      const createDocElements = (blocks: Block[], addPageBreak: boolean = false) => {
+        const elements: (Paragraph | Table)[] = [];
+
+        blocks.forEach((block) => {
+          if (block.type === "table" && block.rows) {
+            elements.push(createDocxTable(block.rows));
+          } else {
+            elements.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: block.text || "",
+                    bold: block.bold || block.type === "heading",
+                    italics: block.italic,
+                    size: block.type === "heading" ? 28 : 24,
+                    font: "Arial",
+                  }),
+                ],
+                alignment: getAlignment(block.align),
+                spacing: { after: 200, line: 360 },
+              })
+            );
+          }
+        });
+
+        if (addPageBreak) {
+          elements.push(
+            new Paragraph({
+              children: [new PageBreak()],
+            })
+          );
+        }
+
+        return elements;
+      };
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              ...createDocElements(page1Blocks, true),
+              ...createDocElements(page2Blocks, true),
+              ...createDocElements(page3Blocks, false),
+            ],
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, "grama_panchayati_audit_report.docx");
       setDownloadPopupOpen(false);
     } catch (error) {
       console.error("DOCX generation error:", error);
@@ -807,7 +658,6 @@ export default function HomePage() {
                 blocks={page1Blocks}
                 pageNo={1}
                 isEditing={editorActive}
-                editor={currentEditor}
                 onEditorReady={setCurrentEditor}
               />
             </div>
@@ -816,7 +666,14 @@ export default function HomePage() {
                 blocks={page2Blocks}
                 pageNo={2}
                 isEditing={editorActive}
-                editor={currentEditor}
+                onEditorReady={setCurrentEditor}
+              />
+            </div>
+            <div>
+              <PagePreview
+                blocks={page3Blocks}
+                pageNo={3}
+                isEditing={editorActive}
                 onEditorReady={setCurrentEditor}
               />
             </div>
