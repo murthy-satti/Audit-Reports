@@ -501,7 +501,7 @@ export default function HomePage() {
                 const td = document.createElement("td");
 
                 td.textContent = cell.text;
-                td.style.border = "2px solid #333";
+                td.style.border = "1px solid #333";
                 td.style.padding = "8px";
                 td.style.fontSize = "12px";
 
