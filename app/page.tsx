@@ -60,8 +60,8 @@ function DownloadPopup({
             <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
               <Download className="text-white" size={20} />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">
-              డౌన్‌లోడ్ ఫార్మాట్
+            <h2 className="text-lg font-semibold text-slate-800">
+              Download Format
             </h2>
           </div>
           <button
@@ -76,26 +76,26 @@ function DownloadPopup({
         <div className="p-6 space-y-3">
           <button
             onClick={() => onDownload("pdf")}
-            className="w-full p-4 border-2 border-blue-300 rounded-lg hover:bg-blue-50 transition flex items-center gap-3"
+            className="w-full p-4 border-2 border-blue-300 rounded-lg hover:bg-blue-50 transition flex items-center gap-3 cursor-pointer"
           >
             <div className="w-10 h-10 rounded bg-red-100 flex items-center justify-center">
               <span className="text-red-600 font-bold text-sm">PDF</span>
             </div>
             <div className="text-left">
-              <p className="font-semibold text-slate-900">PDF ఫార్మాట్</p>
+              <p className="font-semibold text-slate-900">PDF Format</p>
               <p className="text-xs text-slate-500">ప్రింట్ కోసం సిద్ధం</p>
             </div>
           </button>
 
           <button
             onClick={() => onDownload("docx")}
-            className="w-full p-4 border-2 border-blue-300 rounded-lg hover:bg-blue-50 transition flex items-center gap-3"
+            className="w-full p-4 border-2 border-blue-300 rounded-lg hover:bg-blue-50 transition flex items-center gap-3 cursor-pointer"
           >
             <div className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center">
               <span className="text-blue-600 font-bold text-sm">DOC</span>
             </div>
             <div className="text-left">
-              <p className="font-semibold text-slate-900">DOCX ఫార్మాట్</p>
+              <p className="font-semibold text-slate-900">DOCX Format</p>
               <p className="text-xs text-slate-500">MS Word లో సవరించండి</p>
             </div>
           </button>
@@ -131,7 +131,7 @@ function PagePreview({
           pageNo={pageNo}
         />
         <div className="text-center text-xs py-3 text-slate-400 border-t border-slate-200">
-          పేజీ {pageNo}
+          Page {pageNo}
         </div>
       </div>
     );
@@ -151,16 +151,19 @@ function PagePreview({
               block.align === "center"
                 ? "text-center"
                 : block.align === "right"
-                ? "text-right"
-                : block.align === "justify"
-                ? "text-justify"
-                : "text-left";
+                  ? "text-right"
+                  : block.align === "justify"
+                    ? "text-justify"
+                    : "text-left";
 
             const style = {
               fontWeight: block.bold ? "600" : "400",
               fontStyle: block.italic ? "italic" : "normal",
               color: block.color || "inherit",
+              fontSize: block.fontSize ? `${block.fontSize}px` : "14px",
+              lineHeight: "1.7",
             };
+
 
             if (block.type === "heading") {
               return (
@@ -185,14 +188,14 @@ function PagePreview({
             );
           })
         ) : (
-          <div className="text-slate-400 text-center py-10">
+          <div className="text-slate-600 text-center py-10">
             పేజీ ఖాళీగా ఉంది
           </div>
         )}
       </div>
 
-      <div className="text-center text-xs py-3 text-slate-400 border-t border-slate-200">
-        పేజీ {pageNo}
+      <div className="text-center text-xs py-3 text-slate-400">
+        Page {pageNo}
       </div>
     </div>
   );
@@ -249,6 +252,8 @@ export default function HomePage() {
         text: "గ్రామ పంచాయతీ ఆడిట్ నివేదిక",
         align: "center",
         bold: true,
+                fontSize: 18
+
       },
       {
         type: "paragraph",
@@ -257,11 +262,7 @@ export default function HomePage() {
       },
       {
         type: "paragraph",
-        text: `గ్రామ పంచాయతీ పేరు : ${gpName}
-మండలం : ${mandal}
-జిల్లా : ${district}
-ఆర్థిక సంవత్సరం : ${financialYear}
-ఆడిట్ నివేదిక తేదీ : ${reportDate}`,
+        text: `గ్రామ పంచాయతీ పేరు : ${gpName}\n మండలం : ${mandal}\n జిల్లా : ${district}\n ఆర్థిక సంవత్సరం : ${financialYear}\n ఆడిట్ నివేదిక తేదీ : ${reportDate}`,
         align: "center",
       },
       {
@@ -284,8 +285,10 @@ export default function HomePage() {
       {
         type: "heading",
         text: "గ్రామ పంచాయతీ పాలకవర్గ వివరాలు",
-        align: "left",
+        align: "center",
         bold: true,
+                fontSize: 18
+
       },
       {
         type: "paragraph",
@@ -326,6 +329,7 @@ export default function HomePage() {
         text: "ఆదాయ-వ్యయాల వివరాలు",
         align: "center",
         bold: true,
+        fontSize: 18
       },
       {
         type: "paragraph",
@@ -335,14 +339,70 @@ export default function HomePage() {
       {
         type: "table",
         rows: [
-          { cells: ["క్ర.సం.", "వివరణ", "ఆదాయం (రూ.)", "వ్యయం (రూ.)"] },
-          { cells: ["1", "ప్రభుత్వ గ్రాంట్లు", "15,00,000", "-"] },
-          { cells: ["2", "పన్నుల ద్వారా ఆదాయం", "8,50,000", "-"] },
-          { cells: ["3", "ఇతర ఆదాయం", "5,25,000", "-"] },
-          { cells: ["4", "వేతనాలు & భత్యాలు", "-", "12,00,000"] },
-          { cells: ["5", "అభివృద్ధి పనులు", "-", "10,50,000"] },
-          { cells: ["6", "నిర్వహణ ఖర్చులు", "-", "5,40,000"] },
-          { cells: ["", "మొత్తం", income, expense] },
+          {
+            cells: [
+              { text: "క్ర.సం.", bold: true },
+              { text: "వివరణ", bold: true },
+              { text: "ఆదాయం (రూ.)", bold: true },
+              { text: "వ్యయం (రూ.)", bold: true },
+            ],
+          },
+          {
+            cells: [
+              { text: "1" },
+              { text: "ప్రభుత్వ గ్రాంట్లు" },
+              { text: "15,00,000" },
+              { text: "-" },
+            ],
+          },
+          {
+            cells: [
+              { text: "2" },
+              { text: "పన్నుల ద్వారా ఆదాయం" },
+              { text: "8,50,000" },
+              { text: "-" },
+            ],
+          },
+          {
+            cells: [
+              { text: "3" },
+              { text: "ఇతర ఆదాయం" },
+              { text: "5,25,000" },
+              { text: "-" },
+            ],
+          },
+          {
+            cells: [
+              { text: "4" },
+              { text: "వేతనాలు & భత్యాలు" },
+              { text: "-" },
+              { text: "12,00,000" },
+            ],
+          },
+          {
+            cells: [
+              { text: "5" },
+              { text: "అభివృద్ధి పనులు" },
+              { text: "-" },
+              { text: "10,50,000" },
+            ],
+          },
+          {
+            cells: [
+              { text: "6" },
+              { text: "నిర్వహణ ఖర్చులు" },
+              { text: "-" },
+              { text: "5,40,000" },
+            ],
+          },
+          {
+            cells: [
+              { text: "" },
+              { text: "మొత్తం", bold: true },
+              { text: income, bold: true },
+              { text: expense, bold: true },
+            ],
+          },
         ],
       },
       {
@@ -385,7 +445,7 @@ export default function HomePage() {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
 
-      // Create a temporary container for rendering
+      // Temp container
       const container = document.createElement("div");
       container.style.position = "absolute";
       container.style.left = "-9999px";
@@ -394,35 +454,41 @@ export default function HomePage() {
       document.body.appendChild(container);
 
       const pdf = new jsPDF("p", "mm", "a4");
+
       const pageWidth = 210;
       const pageHeight = 297;
-      const margin = 15;
+      const margin = 5;
       const contentWidth = pageWidth - margin * 2;
 
       const allPages = [
-        { blocks: page1Blocks, title: "పేజీ 1" },
-        { blocks: page2Blocks, title: "పేజీ 2" },
-        { blocks: page3Blocks, title: "పేజీ 3" },
+        page1Blocks,
+        page2Blocks,
+        page3Blocks,
       ];
 
       for (let i = 0; i < allPages.length; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
+        if (i > 0) pdf.addPage();
 
-        const { blocks } = allPages[i];
+        const blocks = allPages[i];
 
-        // Create page content
+        /* ===== A4 PAGE WRAPPER ===== */
         const pageDiv = document.createElement("div");
         pageDiv.style.width = "595px";
-        pageDiv.style.padding = "40px";
-        pageDiv.style.fontFamily = "Arial, sans-serif";
+        pageDiv.style.height = "842px"; // FIXED A4 HEIGHT
+        pageDiv.style.padding = "20px";
+        pageDiv.style.boxSizing = "border-box";
+        pageDiv.style.display = "flex";
+        pageDiv.style.flexDirection = "column";
         pageDiv.style.background = "white";
+        pageDiv.style.fontFamily = "Arial, sans-serif";
         pageDiv.style.color = "black";
+
+        /* ===== CONTENT AREA ===== */
+        const contentDiv = document.createElement("div");
+        contentDiv.style.flex = "1";
 
         blocks.forEach((block) => {
           if (block.type === "table" && block.rows) {
-            // Create HTML table
             const table = document.createElement("table");
             table.style.width = "100%";
             table.style.borderCollapse = "collapse";
@@ -430,71 +496,95 @@ export default function HomePage() {
 
             block.rows.forEach((row) => {
               const tr = document.createElement("tr");
+
               row.cells.forEach((cell) => {
                 const td = document.createElement("td");
-                td.textContent = cell;
-                td.style.border = "1px solid #ccc";
+
+                td.textContent = cell.text;
+                td.style.border = "2px solid #333";
                 td.style.padding = "8px";
                 td.style.fontSize = "12px";
+
+                if (cell.bold) td.style.fontWeight = "bold";
+                if (cell.align) td.style.textAlign = cell.align;
+
                 tr.appendChild(td);
               });
+
               table.appendChild(tr);
             });
 
-            pageDiv.appendChild(table);
+
+            contentDiv.appendChild(table);
           } else {
-            const el = document.createElement(block.type === "heading" ? "h2" : "p");
+            const el = document.createElement(
+              block.type === "heading" ? "h2" : "p"
+            );
             el.textContent = block.text || "";
             el.style.margin = "0 0 16px 0";
-            el.style.fontSize = block.type === "heading" ? "16px" : "14px";
-            el.style.fontWeight = block.bold || block.type === "heading" ? "bold" : "normal";
+            const fontPx =
+              block.fontSize ??
+              (block.type === "heading" ? 16 : 12);
+
+            el.style.fontSize = `${fontPx}px`;
+            el.style.fontWeight =
+              block.bold || block.type === "heading" ? "bold" : "normal";
             el.style.fontStyle = block.italic ? "italic" : "normal";
             el.style.textAlign = block.align || "left";
             el.style.lineHeight = "1.8";
             el.style.whiteSpace = "pre-wrap";
-            pageDiv.appendChild(el);
+
+            contentDiv.appendChild(el);
           }
         });
 
-        // Add page number
+        pageDiv.appendChild(contentDiv);
+
+        /* ===== FOOTER ===== */
         const pageNum = document.createElement("div");
-        pageNum.textContent = `పేజీ ${i + 1}`;
+        pageNum.textContent = `Page ${i + 1}`;
         pageNum.style.textAlign = "center";
-        pageNum.style.marginTop = "40px";
         pageNum.style.fontSize = "12px";
         pageNum.style.color = "#666";
+        pageNum.style.marginTop = "auto"; // STICKS TO BOTTOM
+
         pageDiv.appendChild(pageNum);
 
         container.innerHTML = "";
         container.appendChild(pageDiv);
 
-        // Render to canvas
+        /* ===== RENDER TO PDF ===== */
         const canvas = await html2canvas(pageDiv, {
           scale: 2,
           useCORS: true,
-          logging: false,
           backgroundColor: "#ffffff",
         });
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
-        const imgWidth = contentWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
-        pdf.addImage(imgData, "JPEG", margin, margin, imgWidth, Math.min(imgHeight, pageHeight - margin * 2));
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          margin,
+          margin,
+          contentWidth,
+          pageHeight - margin * 2
+        );
       }
 
-      // Cleanup
       document.body.removeChild(container);
-
       pdf.save("grama_panchayati_audit_report.pdf");
       setDownloadPopupOpen(false);
     } catch (error) {
       console.error("PDF generation error:", error);
-      alert("PDF డౌన్‌లోడ్ సమయంలో ఎర్రర్ సంభవించింది");
+      alert("PDF డౌన్‌లోడ్ సమయంలో లోపం వచ్చింది");
     }
   };
 
+
   /* ================= DOCX DOWNLOAD ================= */
+
   const downloadDocx = async () => {
     try {
       const getAlignment = (align?: string) => {
@@ -510,7 +600,16 @@ export default function HomePage() {
         }
       };
 
-      const createDocxTable = (rows: { cells: string[] }[]) => {
+      // ---- TABLE CREATION ----
+      const createDocxTable = (
+        rows: {
+          cells: {
+            text: string;
+            bold?: boolean;
+            align?: "left" | "center" | "right";
+          }[];
+        }[]
+      ) => {
         return new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
           rows: rows.map(
@@ -523,9 +622,10 @@ export default function HomePage() {
                         new Paragraph({
                           children: [
                             new TextRun({
-                              text: cell,
-                              size: 22,
+                              text: cell.text,
+                              bold: cell.bold,
                               font: "Arial",
+                              size: 24, // 12px table text
                             }),
                           ],
                         }),
@@ -537,13 +637,22 @@ export default function HomePage() {
         });
       };
 
-      const createDocElements = (blocks: Block[], addPageBreak: boolean = false) => {
+      // ---- BLOCK → DOC ELEMENTS ----
+      const createDocElements = (
+        blocks: Block[],
+        addPageBreak: boolean = false
+      ) => {
         const elements: (Paragraph | Table)[] = [];
 
         blocks.forEach((block) => {
           if (block.type === "table" && block.rows) {
             elements.push(createDocxTable(block.rows));
           } else {
+            // 🔑 px → docx (half-points)
+            const fontPx =
+              block.fontSize ??
+              (block.type === "heading" ? 16 : 12);
+
             elements.push(
               new Paragraph({
                 children: [
@@ -551,12 +660,15 @@ export default function HomePage() {
                     text: block.text || "",
                     bold: block.bold || block.type === "heading",
                     italics: block.italic,
-                    size: block.type === "heading" ? 28 : 24,
                     font: "Arial",
+                    size: fontPx * 2, // ⭐ IMPORTANT FIX
                   }),
                 ],
                 alignment: getAlignment(block.align),
-                spacing: { after: 200, line: 360 },
+                spacing: {
+                  after: 200,
+                  line: 360,
+                },
               })
             );
           }
@@ -573,10 +685,20 @@ export default function HomePage() {
         return elements;
       };
 
+      //margin of the page
       const doc = new Document({
         sections: [
           {
-            properties: {},
+            properties: {
+              page: {
+                margin: {
+                  top: 720,    // 0.5 inch
+                  bottom: 720,
+                  left: 720,
+                  right: 720,
+                },
+              },
+            },
             children: [
               ...createDocElements(page1Blocks, true),
               ...createDocElements(page2Blocks, true),
@@ -586,6 +708,7 @@ export default function HomePage() {
         ],
       });
 
+
       const blob = await Packer.toBlob(doc);
       saveAs(blob, "grama_panchayati_audit_report.docx");
       setDownloadPopupOpen(false);
@@ -594,6 +717,7 @@ export default function HomePage() {
       alert("DOCX డౌన్‌లోడ్ సమయంలో ఎర్రర్ సంభవించింది");
     }
   };
+
 
   const handleDownload = (format: "pdf" | "docx") => {
     if (format === "pdf") {
@@ -607,17 +731,17 @@ export default function HomePage() {
     <div className="h-screen overflow-hidden bg-linear-to-br from-slate-100 via-slate-50 to-slate-100 flex flex-col">
       {/* ================= HEADER ================= */}
       <nav className="bg-white shadow-md border-b border-slate-200 shrink-0">
-        <div className="max-w-full px-6 py-4 flex items-center justify-between">
+        <div className="max-w-full px-3 md:px-6 py-3 md:py-4 flex items-center justify-between">
           {/* Left - Logo & Title */}
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
+            <div className="w-8 md:w-10 h-8 md:h-10 rounded-lg bg-linear-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
               <FileText className="text-white" size={20} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">
+              <h1 className="text-sm md:text-xl font-bold text-slate-900">
                 గ్రామ పంచాయతీ నివేదిక
               </h1>
-              <p className="text-xs text-slate-500">ఆడిట్ జెనరేటర్</p>
+              <p className="text-[10px] md:text-xs text-slate-500">ఆడిట్ జెనరేటర్</p>
             </div>
           </div>
 
@@ -626,34 +750,33 @@ export default function HomePage() {
             {/* Toggle Editor Button */}
             <button
               onClick={() => setEditorActive(!editorActive)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
-                editorActive
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-slate-200 text-slate-800 hover:bg-slate-300"
-              }`}
+              className={`text-sm md:text-base flex items-center gap-2 px-2 md:px-4 py-2.5 rounded-lg font-medium transition-all ${editorActive
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                } whitespace-nowrap`}
             >
-              <Edit2 size={18} />
-              {editorActive ? "సవరణ విస్మరించండి" : "సవరించండి"}
+              <Edit2 className="h-4 md:h-5 w-4 md:w-5" />
+              {editorActive ? "Cancel Edit" : "Edit Mode"}
             </button>
 
             {/* Download Button */}
             <button
               onClick={() => setDownloadPopupOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-all"
+              className="ext-sm md:text-base flex items-center gap-2 px-2 md:px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-all"
             >
-              <Download size={18} />
-              డౌన్‌లోడ్
+              <Download className="h-4 md:h-5 w-4 md:w-5" />
+              Download
             </button>
           </div>
         </div>
       </nav>
 
       {/* ================= MAIN CONTENT ================= */}
-      <div className="flex-1 flex flex-col px-6 py-6 min-h-0 overflow-hidden gap-6">
-        <div className="grid grid-cols-3 gap-6 h-full min-h-0">
+      <div className="flex-1 flex flex-col p-2.5 md:p-5 min-h-0 overflow-hidden gap-6">
+<div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 h-full min-h-0 overflow-y-auto">
           {/* ================= LEFT - PREVIEW (SCROLLABLE) ================= */}
-          <div className="col-span-2 overflow-y-auto space-y-6 pr-4 min-h-0">
-            <div>
+  <div className="md:col-span-2 flex flex-col gap-6 h-[60vh] md:h-[85vh] overflow-y-auto">
+                <div>
               <PagePreview
                 blocks={page1Blocks}
                 pageNo={1}
@@ -680,14 +803,12 @@ export default function HomePage() {
           </div>
 
           {/* ================= RIGHT - FORM ================= */}
-          <div className="col-span-1 h-full flex flex-col min-h-0">
+  <div className="md:col-span-1 flex flex-col">
             {/* Form Card */}
             <div className="bg-white rounded-xl shadow-lg border border-slate-300 h-full flex flex-col overflow-hidden min-h-0">
               {/* Header */}
               <div className="flex items-center gap-3 bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 border-b border-blue-400 shrink-0">
-                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">⚙</span>
-                </div>
+
                 <div>
                   <h2 className="text-base font-bold text-white">
                     వివరాలు సవరించండి
@@ -703,8 +824,8 @@ export default function HomePage() {
               >
                 {/* Page 1 Section */}
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider border-b-2 border-blue-300 pb-2">
-                    📄 పేజీ 1
+                  <h3 className="text-xs font-bold text-slate-800 mb-3  tracking-wider border-b-2 border-blue-300 pb-2">
+                    Page 1
                   </h3>
                   <div className="space-y-2.5">
                     <Input
@@ -742,8 +863,8 @@ export default function HomePage() {
 
                 {/* Page 2 Section */}
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider border-b-2 border-blue-300 pb-2">
-                    📄 పేజీ 2
+                  <h3 className="text-xs font-bold text-slate-800 mb-3  tracking-wider border-b-2 border-blue-300 pb-2">
+                    Page 2
                   </h3>
                   <div className="space-y-2.5">
                     <Input

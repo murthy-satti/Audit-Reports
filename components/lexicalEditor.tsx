@@ -11,6 +11,8 @@ import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import { ParagraphNode } from "lexical";
+
 import {
   TableNode,
   TableRowNode,
@@ -82,11 +84,18 @@ import {
 export interface Block {
   type: "paragraph" | "heading" | "table";
   text?: string;
+  fontSize?: number;
   align?: "left" | "center" | "right" | "justify";
   bold?: boolean;
   italic?: boolean;
   color?: string;
-  rows?: { cells: string[] }[];
+rows?: {
+  cells: {
+    text: string;
+    bold?: boolean;
+    align?: "left" | "center" | "right";
+  }[];
+}[];
 }
 
 interface ToolbarButtonProps {
@@ -630,32 +639,44 @@ export function PopulateEditorPlugin({
       root.clear();
 
       blocks.forEach((block) => {
-        if (block.type === "table" && block.rows) {
-          // Create table with data
-          const numRows = block.rows.length;
-          const numCols = block.rows[0]?.cells.length || 3;
-          const tableNode = $createTableNodeWithDimensions(numRows, numCols, false);
+  if (block.type === "table" && block.rows) {
+  const numRows = block.rows.length;
+  const numCols = block.rows[0]?.cells.length || 1;
 
-          // Populate table cells with data
-          const tableRows = tableNode.getChildren() as TableRowNode[];
-          block.rows.forEach((rowData, rowIndex) => {
-            const rowNode = tableRows[rowIndex];
-            if (rowNode) {
-              const cells = rowNode.getChildren() as TableCellNode[];
-              rowData.cells.forEach((cellText, cellIndex) => {
-                const cellNode = cells[cellIndex];
-                if (cellNode) {
-                  const paragraphs = cellNode.getChildren();
-                  if (paragraphs[0]) {
-                    const textNode = $createTextNode(cellText);
-                    (paragraphs[0] as any).append(textNode);
-                  }
-                }
-              });
-            }
-          });
+  const tableNode = $createTableNodeWithDimensions(numRows, numCols, false);
+  const tableRows = tableNode.getChildren() as TableRowNode[];
 
-          root.append(tableNode);
+  block.rows.forEach((rowData, rowIndex) => {
+    const rowNode = tableRows[rowIndex];
+    if (!rowNode) return;
+
+    const cellNodes = rowNode.getChildren() as TableCellNode[];
+
+    rowData.cells.forEach((cell, cellIndex) => {
+      const cellNode = cellNodes[cellIndex];
+      if (!cellNode) return;
+
+const paragraph = cellNode.getFirstChild();
+
+if (!(paragraph instanceof ParagraphNode)) return;
+      if (!paragraph) return;
+
+      const textNode = $createTextNode(cell.text);
+
+      if (cell.bold) {
+        textNode.toggleFormat("bold");
+      }
+
+      paragraph.clear();
+      paragraph.append(textNode);
+
+      if (cell.align) {
+        paragraph.setFormat(cell.align);
+      }
+    });
+  });
+
+  root.append(tableNode);
         } else if (block.type === "heading") {
           // Create heading node
           const heading = $createHeadingNode("h2");
@@ -761,7 +782,13 @@ export function DocumentEditor({
 export function TableRenderer({
   rows,
 }: {
-  rows: { cells: string[] }[];
+  rows: {
+    cells: {
+      text: string;
+      bold?: boolean;
+      align?: "left" | "center" | "right";
+    }[];
+  }[];
 }) {
   return (
     <table className="w-full border-collapse mb-4">
@@ -772,8 +799,12 @@ export function TableRenderer({
               <td
                 key={cellIndex}
                 className="border border-slate-300 p-2 text-sm"
+                style={{
+                  fontWeight: cell.bold ? "600" : "400",
+                  textAlign: cell.align || "left",
+                }}
               >
-                {cell}
+                {cell.text}
               </td>
             ))}
           </tr>
@@ -782,3 +813,4 @@ export function TableRenderer({
     </table>
   );
 }
+
